@@ -12,11 +12,8 @@ public class Example : Day04
     public override long Part2Result { get; } = 4;
 }
 
-public abstract class Day04
+public abstract class Day04 : AOCDay
 {
-    public abstract long Part1Result { get; }
-    public abstract long Part2Result { get; }
-    protected virtual IEnumerable<string> Input => this.EmbeddedResourceLines();
     protected IEnumerable<(Range elf1, Range elf2)> ParsedInput()
     {
         return Input.Select(ParseLine);
@@ -32,28 +29,17 @@ public abstract class Day04
         }
     }
 
-    [Fact]
-    public void Part1()
-    {
-        var contains = ParsedInput().Count(x =>
+    public override long Part1() => ParsedInput().Count(x =>
             x.elf1.Start.Value <= x.elf2.Start.Value && x.elf1.End.Value >= x.elf2.End.Value ||
             x.elf2.Start.Value <= x.elf1.Start.Value && x.elf2.End.Value >= x.elf1.End.Value
         );
-        Assert.Equal(Part1Result, contains);
-    }
 
 
     [Fact]
-    public void Part2()
-    {
-        var work = ParsedInput().ToArray();
-        var hasIntersection = work.Count(x =>
+    public override long Part2() => ParsedInput().Count(x =>
         {
             var range1 = Enumerable.Range(x.elf1.Start.Value, x.elf1.End.Value - x.elf1.Start.Value + 1);
             var range2 = Enumerable.Range(x.elf2.Start.Value, x.elf2.End.Value - x.elf2.Start.Value + 1);
             return range1.Intersect(range2).Any();
         });
-        Assert.Equal(Part2Result, hasIntersection);
-    }
 }
-

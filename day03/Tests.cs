@@ -39,11 +39,8 @@ public class Example : Day03
     public void Part1_Partials(int line, char expected) => Assert.Equal(expected, GetSharedItems(Input.ElementAt(line)).Single());
 }
 
-public abstract class Day03
+public abstract class Day03 : AOCDay
 {
-    public abstract long Part1Result { get; }
-    public abstract long Part2Result { get; }
-    protected virtual IEnumerable<string> Input => this.EmbeddedResourceLines();
     protected static long Priority(char c)
     {
         var total = 0;
@@ -74,11 +71,7 @@ public abstract class Day03
         return common;
     }
 
-    [Fact]
-    public void Part1()
-    {
-        Assert.Equal(Part1Result, Input.SelectMany(GetSharedItems).Select(Priority).Sum());
-    }
+    public override long Part1() => Input.SelectMany(GetSharedItems).Select(Priority).Sum();
 
     protected static IEnumerable<IEnumerable<string>> GroupsOfThree(IEnumerable<string> lines)
     {
@@ -94,11 +87,6 @@ public abstract class Day03
         }
     }
 
-
-    [Fact]
-    public void Part2()
-    {
-        Assert.Equal(Part2Result, GroupsOfThree(Input).Select(three => GetSharedItems(three).Single()).Select(Priority).Sum());
-    }
+    public override long Part2() => GroupsOfThree(Input).Select(three => GetSharedItems(three).Single()).Select(Priority).Sum();
 }
 

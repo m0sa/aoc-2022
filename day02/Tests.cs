@@ -41,12 +41,8 @@ public class Example : Day02
     }
 }
 
-public abstract class Day02
+public abstract class Day02 : AOCDay
 {
-    protected virtual IEnumerable<string> Input => this.EmbeddedResourceLines();
-    public abstract long Part1Result { get; }
-    public abstract long Part2Result { get; }
-
     public enum Shape : byte { Rock, Paper, Scissors }
     protected static byte Points(Shape shape) => shape switch { Rock => 1, Paper => 2, Scissors => 3, _ => throw new ArgumentException() };
 
@@ -68,23 +64,14 @@ public abstract class Day02
         _ => throw new ArgumentException(),
     });
 
-    [Fact]
-    public void Part1()
-    {
-        Assert.Equal(Part1Result, Input.Select(ParseRound).Select(Points).Sum());
-    }
+    public override long Part1() => Input.Select(ParseRound).Select(Points).Sum();
 
     protected static Round ParseRound(string line) => new Round(
         line[0] switch { 'A' => Rock, 'B' => Paper, 'C' => Scissors, char e => throw new Exception($"Unexpected shape: {e}") },
         line[2] switch { 'X' => Rock, 'Y' => Paper, 'Z' => Scissors, char e => throw new Exception($"Unexpected shape: {e}") });
 
 
-    [Fact]
-    public void Part2()
-    {
-        Assert.Equal(Part2Result, Input.Select(ParseStrategy).Select(StrategyToRound).Select(Points).Sum());
-    }
-
+    public override long Part2() => Input.Select(ParseStrategy).Select(StrategyToRound).Select(Points).Sum();
 
     protected record Strategy(Shape them, Outcome outcome);
 

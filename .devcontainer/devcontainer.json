@@ -1,5 +1,11 @@
 {
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "image": "mcr.microsoft.com/vscode/devcontainers/dotnet:7.0",
   "features": {
-  }
+  },
+  "extensions": [
+    "tintoy.msbuild-project-tools",
+    "nhoizey.gremlins",
+    "ms-dotnettools.csharp",
+    "shardulm94.trailing-spaces"
+  ]
 }
