@@ -1,12 +1,14 @@
 namespace utils;
 
-public abstract class AOCDay
+public interface IAOCDay { }
+public abstract class AOCDay : AOCDay<long> {}
+public abstract class AOCDay<T> : IAOCDay
 {
-    public abstract long Part1Result { get; }
-    public abstract long Part2Result { get; }
+    public abstract T Part1Result { get; }
+    public abstract T Part2Result { get; }
 
-    public abstract long Part1();
-    public abstract long Part2();
+    public abstract T Part1();
+    public abstract T Part2();
 
     protected virtual IEnumerable<string> Input => this.EmbeddedResourceLines();
 

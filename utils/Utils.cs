@@ -1,7 +1,7 @@
 ﻿namespace utils;
 public static class Utils
 {
-    public static IEnumerable<string> EmbeddedResourceLines<T>(this T instance) where T : AOCDay
+    public static IEnumerable<string> EmbeddedResourceLines<T>(this T instance) where T : IAOCDay
     {
         var t = instance.GetType();
         var resourceName = $"{t.Namespace}.{t.Name}.txt";

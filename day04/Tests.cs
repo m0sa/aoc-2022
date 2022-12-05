@@ -34,8 +34,6 @@ public abstract class Day04 : AOCDay
             x.elf2.Start.Value <= x.elf1.Start.Value && x.elf2.End.Value >= x.elf1.End.Value
         );
 
-
-    [Fact]
     public override long Part2() => ParsedInput().Count(x =>
         {
             var range1 = Enumerable.Range(x.elf1.Start.Value, x.elf1.End.Value - x.elf1.Start.Value + 1);
