@@ -3,13 +3,13 @@ namespace day07;
 public class Input : Day07
 {
     public override long Part1Result { get; } = 1792222;
-    public override long Part2Result { get; } = -1;
+    public override long Part2Result { get; } = 1112963;
 }
 
 public class Example : Day07
 {
     public override long Part1Result { get; } = 95437;
-    public override long Part2Result { get; } = -1;
+    public override long Part2Result { get; } = 24933642;
 
     [Fact]
     public void ParseInputTest()
@@ -85,5 +85,17 @@ public abstract class Day07 : AOCDay
 
     public override long Part1() => ParseInput().Where(x => x.Type == NodeType.Directory && x.Size <= 100000).Sum(x => x.Size);
 
-    public override long Part2() => -1;
+    public override long Part2()
+    {
+        var diskSize = 70000000;
+        var requiredFree = 30000000;
+        var fileSystem = ParseInput();
+
+        var currentUsed = fileSystem.Single(d => d.Path.IsEmpty).Size;
+        var currentFree = diskSize - currentUsed;
+        var minimalToFree = requiredFree - currentFree;
+
+        var directoryToRemove = fileSystem.Where(x => x.Type == NodeType.Directory).OrderBy(x => x.Size).First(d => d.Size >= minimalToFree);
+        return directoryToRemove.Size;
+    }
 }
