@@ -4,13 +4,13 @@ using Map = ImmutableDictionary<Vec2D, byte>;
 public class Input : Day08
 {
     public override long Part1Result { get; } = 1711;
-    public override long Part2Result { get; } = -1;
+    public override long Part2Result { get; } = 301392;
 }
 
 public class Example : Day08
 {
     public override long Part1Result { get; } = 21;
-    public override long Part2Result { get; } = -1;
+    public override long Part2Result { get; } = 8;
 }
 
 public record struct Vec2D(int X, int Y)
@@ -45,7 +45,24 @@ public abstract class Day08 : AOCDay
         }
     }
 
+    protected long ScenicScore(Vec2D pov)
+    {
+        var hPov = Map[pov];
+        var mul = 1;
+        foreach (var d in Directions)
+        {
+            var cnt = 0;
+            foreach (var h in LookInDirection(pov, d))
+            {
+                cnt++;
+                if (h >= hPov) break;
+            }
+            mul *= cnt;
+        }
+        return mul;
+    }
+
     public override long Part1() => Map.Keys.Count(IsVisible);
 
-    public override long Part2() => -1;
+    public override long Part2() => Map.Keys.Max(ScenicScore);
 }
