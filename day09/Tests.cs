@@ -2,14 +2,19 @@ namespace Day09;
 
 public class Input : Day09
 {
-    public override long Part1Result { get; } = -1;
-    public override long Part2Result { get; } = -1;
+    public override long Part1Result { get; } = 6271;
+    public override long Part2Result { get; } = 2458;
 }
 
 public class Example : Day09
 {
     public override long Part1Result { get; } = 13;
-    public override long Part2Result { get; } = -1;
+    public override long Part2Result { get; } = 1;
+}
+public class Example2 : Day09
+{
+    public override long Part1Result { get; } = 88;
+    public override long Part2Result { get; } = 36;
 }
 
 public abstract class Day09 : AOCDay
@@ -29,23 +34,28 @@ public abstract class Day09 : AOCDay
         return new Instruction(direction, steps);
     });
 
-    public override long Part1()
+    public override long Part1() => TailVisitCount(2);
+
+    private long TailVisitCount(int knotCount)
     {
-        Vec2D h = new ();
-        Vec2D t = new ();
-        var posiTions = new HashSet<Vec2D>() { t };
+        var knots = new Vec2D[knotCount];
+        var posiTions = new HashSet<Vec2D>() { new() };
         foreach (var instruction in ParseInput())
         {
             for(var step = 0; step < instruction.Steps; step++)
             {
-                h += instruction.Direction;
-                t += GetPart1HDirection(h, t);
-                posiTions.Add(t);
+                knots[0] += instruction.Direction;
+                for (var k = 1; k < knots.Length; k++)
+                {
+                    knots[k] += GetDirection(knots[k - 1], knots[k]);
+                }
+                posiTions.Add(knots[knots.Length - 1]);
             }
         }
         return posiTions.Count;
     }
-    private static Vec2D GetPart1HDirection(Vec2D h, Vec2D t)
+
+    private static Vec2D GetDirection(Vec2D h, Vec2D t)
     {
         var d = h - t;
         var dx = Math.Abs(d.X);
@@ -57,5 +67,5 @@ public abstract class Day09 : AOCDay
         return new (dx == 0 ? 0 : d.X / dx, dy == 0 ? 0 : d.Y / dy);
     }
 
-    public override long Part2() => -1;
+    public override long Part2() => TailVisitCount(10);
 }
