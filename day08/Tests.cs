@@ -13,11 +13,6 @@ public class Example : Day08
     public override long Part2Result { get; } = 8;
 }
 
-public record struct Vec2D(int X, int Y)
-{
-    public static Vec2D operator+(Vec2D a, Vec2D b) => new Vec2D(a.X + b.X, a.Y + b.Y);
-}
-
 public abstract class Day08 : AOCDay
 {
     private static Vec2D[] Directions = { new (1, 0), new (0, 1), new (0, -1), new (-1, 0) };
