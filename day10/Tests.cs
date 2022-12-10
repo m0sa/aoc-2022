@@ -1,19 +1,37 @@
+using System.Text;
+
 namespace day10;
 
 public class Input : Day10
 {
     public override long Part1Result { get; } = 14920;
-    public override long Part2Result { get; } = -1;
+    public override string Part2Result { get; } =
+        """
+        ###..#..#..##...##...##..###..#..#.####.
+        #..#.#..#.#..#.#..#.#..#.#..#.#..#....#.
+        ###..#..#.#....#..#.#....###..#..#...#..
+        #..#.#..#.#....####.#....#..#.#..#..#...
+        #..#.#..#.#..#.#..#.#..#.#..#.#..#.#....
+        ###...##...##..#..#..##..###...##..####.
+        """;
 }
 
 public class Example : Day10
 {
     public override long Part1Result { get; } = 13140;
-    public override long Part2Result { get; } = -1;
+    public override string Part2Result { get; } =
+        """
+        ##..##..##..##..##..##..##..##..##..##..
+        ###...###...###...###...###...###...###.
+        ####....####....####....####....####....
+        #####.....#####.....#####.....#####.....
+        ######......######......######......####
+        #######.......#######.......#######.....
+        """;
 }
 
 
-public abstract class Day10 : AOCDay
+public abstract class Day10 : AOCDay<long, string>
 {
     protected record struct State(int Cycle, long X, long X_durring);
     protected static Func<long, long> Noop = x => x;
@@ -46,5 +64,20 @@ public abstract class Day10 : AOCDay
         return signalStrenght;
     }
 
-    public override long Part2() => -1;
+    public override string Part2()
+    {
+        var output = new StringBuilder();
+        foreach (var state in States.Skip(1))
+        {
+            var spritePixelsStart = state.X_durring - 1;
+            var spritePixelsEnd = spritePixelsStart + 3;
+            var pixelPos = (state.Cycle - 1) % 40;
+
+            output.Append(pixelPos >= spritePixelsStart && pixelPos < spritePixelsEnd ? '#' : '.');
+            if (pixelPos == 39) {
+                output.AppendLine();
+            }
+        }
+        return output.ToString().Trim();
+    }
 }
