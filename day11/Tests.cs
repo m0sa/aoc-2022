@@ -3,18 +3,17 @@ namespace day11;
 public class Input : Day11
 {
     public override long Part1Result { get; } = 120384;
-    public override long Part2Result { get; } = -1;
+    public override long Part2Result { get; } = 32059801242;
 }
 
 public class Example : Day11
 {
     public override long Part1Result { get; } = 10605;
-    public override long Part2Result { get; } = -1;
+    public override long Part2Result { get; } = 2713310158;
 }
 
 public class Monkey
 {
-    public long Id { get; set; }
     public List<long> Items { get; set; }
     public Func<long, long> Operation { get; set; }
     public int DivisibleBy { get; set; }
@@ -22,21 +21,20 @@ public class Monkey
     public int FalseMonkeyId { get; set; }
     public long ItemsInspected { get; private set; }
 
-    public void Turn(ImmutableList<Monkey> Monkeys)
+    public void Turn(ImmutableList<Monkey> Monkeys, Func<long, long> worryProvider)
     {
         for (var i = 0; i < Items.Count; i++)
         {
-            var worryLevel = Operation(Items[i]);
-            ItemsInspected++;
-            worryLevel = worryLevel / 3;
+            var worryLevel = worryProvider(Operation(Items[i]));
             var targetMonkey = worryLevel % DivisibleBy == 0 ? TrueMonkeyId : FalseMonkeyId;
             Monkeys[targetMonkey].Items.Add(worryLevel);
         }
+        ItemsInspected += Items.Count;
         Items.Clear();
     }
 
 
-    public static void Round(ImmutableList<Monkey> monkeys) => monkeys.ForEach(x => x.Turn(monkeys));
+    public static void Round(ImmutableList<Monkey> monkeys, Func<long, long> worryProvider) => monkeys.ForEach(x => x.Turn(monkeys, worryProvider));
 }
 
 public abstract class Day11 : AOCDay
@@ -56,9 +54,9 @@ public abstract class Day11 : AOCDay
                 continue;
             }
             else if (line.StartsWith("Monkey ") &&
-                long.TryParse(line.Substring("Monkey ".Length).Trim(':'), out var monkeyId))
+                int.TryParse(line.Substring("Monkey ".Length).Trim(':'), out var monkeyId))
             {
-                monkey = new Monkey { Id = monkeyId, Items = new() };
+                monkey = new Monkey { Items = new() };
             }
             else if (line.StartsWith("  Starting items:"))
             {
@@ -68,13 +66,13 @@ public abstract class Day11 : AOCDay
             {
                 Func<long, long, long> op = line.Substring("  Operation: new = old ".Length, 1) switch
                 {
-                    "*" => (a, b) => a * b,
-                    "+" => (a, b) => a + b,
-                    "-" => (a, b) => a - b,
+                    "*" => (a, b) => checked(a * b),
+                    "+" => (a, b) => checked(a + b),
+                    "-" => (a, b) => checked(a - b),
                     _ => throw new Exception("Unexpected operation on line: " + line),
                 };
                 var operand = line.Substring("  Operation: new = old X ".Length);
-                monkey!.Operation = old => op(old, long.TryParse(operand, out var operandlong) ? operandlong : old);
+                monkey!.Operation = old => op(old, long.TryParse(operand, out var operandLong) ? operandLong : old);
             }
             else if (line.StartsWith("  Test: divisible by ") && int.TryParse(line.Substring("  Test: divisible by ".Length), out var divisibleBy))
             {
@@ -97,9 +95,15 @@ public abstract class Day11 : AOCDay
 
     public override long Part1()
     {
-        for (var i = 0; i < 20; i++) Monkey.Round(Monkeys);
+        for (var i = 0; i < 20; i++) Monkey.Round(Monkeys, w => w / 3);
         return Monkeys.OrderByDescending(x => x.ItemsInspected).Take(2).Aggregate(1L, (agg, m) => agg * m.ItemsInspected);
     }
 
-    public override long Part2() => -1;
+    public override long Part2()
+    {
+        var worryLevelDivisor = Monkeys.Select(x => x.DivisibleBy).Aggregate(1L, (agg, c) => agg * c);
+        for (var i = 0; i < 10000; i++) Monkey.Round(Monkeys, w => w % worryLevelDivisor);
+        return Monkeys.OrderByDescending(x => x.ItemsInspected).Take(2).Aggregate(1L, (agg, m) => agg * m.ItemsInspected);
+    }
+
 }
