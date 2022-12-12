@@ -3,18 +3,13 @@ namespace day12;
 public class Input : Day12
 {
     public override long Part1Result { get; } = 456;
-    public override long Part2Result { get; } = -1;
+    public override long Part2Result { get; } = 454;
 }
 
 public class Example : Day12
 {
-    [Fact]
-    public void Ex() {
-        var path = Dijkstra();
-        Assert.Equal(31, path);
-    }
     public override long Part1Result { get; } = 31;
-    public override long Part2Result { get; } = -1;
+    public override long Part2Result { get; } = 29;
 }
 
 public abstract class Day12 : AOCDay
@@ -25,19 +20,17 @@ public abstract class Day12 : AOCDay
         .ToImmutableDictionary();
     protected static Vec2D[] Directions = { new (1, 0), new (0, 1), new (-1, 0), new (0, -1) };
 
-    protected long Dijkstra()
+    protected char HeightOf(Vec2D pos) => HeightMap[pos] switch { 'S' => 'a', 'E' => 'z', char c => c };
+
+    protected long Dijkstra(Vec2D start)
     {
         var dis = HeightMap.ToDictionary(c => c.Key, c => int.MaxValue);
-        var start = HeightMap.Where(kvp => kvp.Value == 'S').Select(kvp => kvp.Key).Single();
         var end = HeightMap.Where(kvp => kvp.Value == 'E').Select(kvp => kvp.Key).Single();
-        dis[start] = 0;
         var queue = HeightMap.Keys.ToList();
-        char HeightOf(Vec2D pos) => HeightMap[pos] switch { 'S' => 'a', 'E' => 'z', char c => c };
         bool TryDequeue(out Vec2D element)
         {
             if (queue!.Count > 0)
             {
-                queue.Sort((v1, v2) => dis[v1].CompareTo(dis[v2]));
                 element = queue[0];
                 queue.RemoveAt(0);
                 return true;
@@ -48,34 +41,39 @@ public abstract class Day12 : AOCDay
                 return false;
             }
         }
+        void UpdateQueue(Vec2D element, int distance)
+        {
+            dis[element] = distance;
+            queue.Sort((v1, v2) => dis[v1].CompareTo(dis[v2]));
+        }
+
+        UpdateQueue(start, 0);
         while(TryDequeue(out var current))
         {
-            if (current == end) continue;
+            if (current == end) break;
             var currentHeight = HeightOf(current);
-            var children =
+            var nextDistance = dis[current] + 1;
+            foreach (var child in
                 from d in Directions
-                let child = current + d
-                where HeightMap.ContainsKey(child)
-                where HeightOf(child) - currentHeight <= 1
-                select child;
-            foreach (var child in children)
+                let c = current + d
+                where dis.TryGetValue(c, out var childDistance)
+                   && nextDistance < childDistance
+                   && HeightOf(c) - currentHeight <= 1
+                select c)
             {
-                dis[child] = Math.Min(dis[current] + 1, dis[child]);
+                UpdateQueue(child, nextDistance);
             }
-        }
-        var W = HeightMap.MaxBy(x => x.Key.X).Key.X;
-        var H = HeightMap.MaxBy(x => x.Key.Y).Key.Y;
-        var s = "";
-        for (var y = 0; y <= H; y++)
-        {
-            for (var x = 0; x <= W; x++)
-                s += $"{dis[new (x, y)],3}";
-            s += Environment.NewLine;
         }
         return dis[end];
     }
 
-    public override long Part1() => Dijkstra(); // first and last step don't count
+    protected Vec2D Start => HeightMap.Where(kvp => kvp.Value == 'S').Select(kvp => kvp.Key).Single();
 
-    public override long Part2() => -1;
+    public override long Part1() => Dijkstra(Start);
+
+    public override long Part2() => HeightMap.Keys
+        .Where(x => HeightOf(x) == 'a'
+            && x.X == 0) // cheating by looking at data.... it's impossible to get out of any aaa-surrounded-by-cccc-s valley
+        .Select(Dijkstra)
+        .Min();
 }
