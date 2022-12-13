@@ -22,10 +22,9 @@ public abstract class Day12 : AOCDay
 
     protected char HeightOf(Vec2D pos) => HeightMap[pos] switch { 'S' => 'a', 'E' => 'z', char c => c };
 
-    protected long Dijkstra(Vec2D start)
+    protected Dictionary<Vec2D, int> Dijkstra(Vec2D start, ISet<Vec2D> ends, Func<Vec2D, Vec2D, bool> isStepViable)
     {
         var dis = HeightMap.ToDictionary(c => c.Key, c => int.MaxValue);
-        var end = HeightMap.Where(kvp => kvp.Value == 'E').Select(kvp => kvp.Key).Single();
         var queue = HeightMap.Keys.ToList();
         bool TryDequeue(out Vec2D element)
         {
@@ -50,30 +49,35 @@ public abstract class Day12 : AOCDay
         UpdateQueue(start, 0);
         while(TryDequeue(out var current))
         {
-            if (current == end) break;
-            var currentHeight = HeightOf(current);
+            if (ends.Contains(current)) continue;
             var nextDistance = dis[current] + 1;
             foreach (var child in
                 from d in Directions
                 let c = current + d
                 where dis.TryGetValue(c, out var childDistance)
                    && nextDistance < childDistance
-                   && HeightOf(c) - currentHeight <= 1
+                   && isStepViable(current, c)
                 select c)
             {
                 UpdateQueue(child, nextDistance);
             }
         }
-        return dis[end];
+        return dis;
     }
 
     protected Vec2D Start => HeightMap.Where(kvp => kvp.Value == 'S').Select(kvp => kvp.Key).Single();
+    protected Vec2D End => HeightMap.Where(kvp => kvp.Value == 'E').Select(kvp => kvp.Key).Single();
 
-    public override long Part1() => Dijkstra(Start);
+    public override long Part1() => Dijkstra(Start, new [] { End }.ToHashSet(), (current, next) => HeightOf(next) - HeightOf(current) <= 1)[End];
 
-    public override long Part2() => HeightMap.Keys
-        .Where(x => HeightOf(x) == 'a'
-            && x.X == 0) // cheating by looking at data.... it's impossible to get out of any aaa-surrounded-by-cccc-s valley
-        .Select(Dijkstra)
-        .Min();
+    public override long Part2()
+    {
+        // this time around, start at E, flip climb rules to be descent rules, find distance to all reachable a's
+        var starts = HeightMap.Keys.Where(x => HeightOf(x) == 'a').ToHashSet();
+        var descentLengths = Dijkstra(
+            start: End,
+            ends: starts,
+            isStepViable: (current, next) => HeightOf(current) - HeightOf(next) <= 1);
+        return starts.Select(a => descentLengths[a]).Min();
+    }
 }
