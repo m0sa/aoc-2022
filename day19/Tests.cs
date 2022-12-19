@@ -11,7 +11,7 @@ public class Input : Day19
 public class Example : Day19
 {
     public override long Part1Result { get; } = 33;
-    public override long Part2Result { get; } = 52 * 62;
+    public override long Part2Result { get; } = 56 * 62;
 
     [Theory]
     [InlineData(24, 1, 9)]
@@ -69,9 +69,11 @@ public abstract class Day19 : AOCDay
             var current = toExplore[0];
             toExplore.RemoveAt(0);
 
-            max = Math.Max(max, current.GeodeReserve);
-
             var time = current.MinutesRemaining;
+            var planned = current.GeodeReserve + current.GeodeRobots * time;
+            if (planned + (time * time - time) / 2 <= max) continue;
+            max = Math.Max(max, planned);
+
             if (time == 0) continue;
 
             var nextTime = time - 1;
