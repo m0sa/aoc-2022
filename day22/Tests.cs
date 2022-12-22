@@ -1,18 +1,65 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Runtime.CompilerServices;
+
 namespace day22;
 
 public class Input : Day22
 {
     public override long Part1Result { get; } = 65368;
-    public override long Part2Result { get; } = -1;
+    public override long Part2Result { get; } = 156166;
+    protected override int CubeSize { get; } = 50;
+
+    protected override State Part2Transform(State state)
+    {
+        var grid = ToGrid(state.Position);
+        var off = SideOffset(state.Position);
+
+        var nextState = (state.Facing, grid.X, grid.Y) switch
+        {
+            (Facing.Up,    1, 3) => new State(Facing.Right, new(Grid(2).Start,                Grid(2).Start + off.Normal.X)),
+            (Facing.Up,    2, 1) => new State(Facing.Right, new(Grid(1).Start,                Grid(4).Start + off.Normal.X)),
+            (Facing.Up,    3, 1) => new State(Facing.Up,    new(Grid(1).Start + off.Normal.X, Grid(4).End)),
+            (Facing.Right, 3, 1) => new State(Facing.Left,  new(Grid(2).End,                  Grid(3).Start + off.Inverse.Y)),
+            (Facing.Right, 2, 2) => new State(Facing.Up,    new(Grid(3).Start + off.Normal.Y, Grid(1).End)),
+            (Facing.Right, 2, 3) => new State(Facing.Left,  new(Grid(3).End,                  Grid(1).Start + off.Inverse.Y)),
+            (Facing.Right, 1, 4) => new State(Facing.Up,    new(Grid(2).Start + off.Normal.Y, Grid(3).End)),
+            (Facing.Down,  1, 4) => new State(Facing.Down,  new(Grid(3).Start + off.Normal.X, Grid(1).Start)),
+            (Facing.Down,  2, 3) => new State(Facing.Left,  new(Grid(1).End,                  Grid(4).Start + off.Normal.X)),
+            (Facing.Down,  3, 1) => new State(Facing.Left,  new(Grid(2).End,                  Grid(2).Start + off.Normal.X)),
+            (Facing.Left,  2, 1) => new State(Facing.Right, new(Grid(1).Start,                Grid(3).Start + off.Inverse.Y)),
+            (Facing.Left,  2, 2) => new State(Facing.Down,  new(Grid(1).Start + off.Normal.Y, Grid(3).Start)),
+            (Facing.Left,  1, 3) => new State(Facing.Right, new(Grid(2).Start,                Grid(1).Start + off.Inverse.Y)),
+            (Facing.Left,  1, 4) => new State(Facing.Down,  new(Grid(2).Start + off.Normal.Y, Grid(1).Start)),
+            _ => throw new Exception($"unexpected transition {grid} heading {state.Facing}"),
+        };
+        return nextState;
+    }
 }
 
 public class Example : Day22
 {
     public override long Part1Result { get; } = 6032;
-    public override long Part2Result { get; } = -1;
+    public override long Part2Result { get; } = 5031;
 
-    [Fact]
-    public void CheckStartingPoint() => Assert.Equal(new Vec2D(9, 1), StartingPoint);
+    protected override int CubeSize { get; } = 4;
+
+    protected override State Part2Transform(State state)
+    {
+        var grid = ToGrid(state.Position);
+        var offset = SideOffset(state.Position);
+
+        switch (state.Position)
+        {
+            case (12, _) when state.Facing == Facing.Right && grid.Y == 2:
+                return new State(Facing.Down, new(Grid(4).Start + offset.Inverse.Y, Grid(3).Start));
+            case (_, 12) when state.Facing == Facing.Down && grid.X == 3:
+                return new State(Facing.Up, new(Grid(1).Start + offset.Inverse.X, Grid(2).End));
+            case (_, 5) when state.Facing == Facing.Up && grid.X == 2:
+                return new State(Facing.Right, new(Grid(3).Start, Grid(1).Start + offset.Normal.X));
+            default:
+                throw new NotImplementedException();
+        }
+    }
 }
 
 public abstract class Day22 : AOCDay
@@ -37,13 +84,14 @@ public abstract class Day22 : AOCDay
         new Vec2D(-1, 0), // <
         new Vec2D(0, -1), // ^
     };
+
     protected enum Turn { Left, Right }
     protected record struct Instruction(int? Moves = null, Turn? Turn = null);
     protected IEnumerable<Instruction> Instructions()
     {
         var tape = Input.Last();
         char[] lr = { 'L', 'R' };
-        for (var position = 0; position < tape.Length; )
+        for (var position = 0; position < tape.Length;)
         {
             if (tape[position] switch { 'L' => Turn.Left, 'R' => Turn.Right, _ => (Turn?)null } is Turn turn)
             {
@@ -61,50 +109,84 @@ public abstract class Day22 : AOCDay
         }
     }
 
-    public override long Part1()
+    public override long Part1() => Solve(Teleport_Part1);
+
+    public enum Facing { Right = 0, Down = 1, Left = 2, Up = 3 }
+    protected record struct State(Facing Facing, Vec2D Position);
+    protected long Solve(Func<State, State> teleport)
     {
         var (facing, position) = Instructions()
-            .Aggregate((facing: 0, position: StartingPoint), (agg, move) =>
+            .Aggregate(new State(Facing.Right, StartingPoint), (agg, move) =>
                 move switch
                 {
-                    (_, Turn turn) => (
-                        facing: (Directions.Length + agg.facing + (turn == Turn.Right ? 1 : -1)) % Directions.Length,
-                        position: agg.position
+                    (_, Turn turn) => new(
+                        (Facing)((Directions.Length + (int)agg.Facing + (turn == Turn.Right ? 1 : -1)) % Directions.Length),
+                        agg.Position
                     ),
-                    (int steps, _) => (
-                        facing: agg.facing,
-                        position: Move(agg.position, Directions[agg.facing], steps)
-                    ),
+                    (int steps, _) => Move(agg, teleport, steps),
                 });
 
-        return 1000 * position.Y + 4 * position.X + facing;
+        return 1000 * position.Y + 4 * position.X + (int)facing;
     }
 
     private Vec2D? _bounds;
     protected Vec2D Max => _bounds ??= Map.Keys.Aggregate((agg, cur) => new Vec2D(Math.Max(agg.X, cur.X), Math.Max(agg.Y, cur.Y)));
 
-    Vec2D Move(Vec2D position, Vec2D direction, int steps)
+    private State Teleport_Part1(State state)
+    {
+        var (facing, position) = state;
+        var direction = Directions[(int)facing];
+        do
+        {
+            position = new(
+                ((Max.X + position.X + direction.X - 1) % Max.X) + 1,
+                ((Max.Y + position.Y + direction.Y - 1) % Max.Y) + 1);
+        } while (!Map.ContainsKey(position));
+
+        return new State(facing, position);
+    }
+
+    private State Move(State state, Func<State, State> teleport, int steps)
     {
         if (steps == 0)
         {
-            return position;
+            return state;
         }
 
+        var (facing, position) = state;
         Tile nextTile;
-        var nextPosition = position;
-        do
+        var nextPosition = position + Directions[(int)facing];
+        if (!Map.TryGetValue(nextPosition, out nextTile))
         {
-            nextPosition = new(
-                ((Max.X + nextPosition.X + direction.X - 1) % Max.X) + 1,
-                ((Max.Y + nextPosition.Y + direction.Y - 1) % Max.Y) + 1);
-        } while (!Map.TryGetValue(nextPosition, out nextTile));
+            (facing, nextPosition) = teleport(state);
+            nextTile = Map[nextPosition];
+        }
 
         return nextTile switch
         {
-            Tile.Path => Move(nextPosition, direction, steps - 1),
-            Tile.Wall => position,
+            Tile.Path => Move(new(facing, nextPosition), teleport, steps - 1),
+            Tile.Wall => state,
         };
     }
 
-    public override long Part2() => -1;
+    public override long Part2() => Solve(Part2Transform);
+
+    protected abstract State Part2Transform(State state);
+    protected abstract int CubeSize { get; }
+
+    protected (Vec2D Normal, Vec2D Inverse) SideOffset(Vec2D position)
+    {
+        Vec2D offset = new(
+            1 + (position.X - 1) % CubeSize,
+            1 + (position.Y - 1) % CubeSize);
+        return (
+            Normal: offset - new Vec2D(1, 1),
+            Inverse: new Vec2D(CubeSize, CubeSize) - offset);
+    }
+    protected Vec2D ToGrid(Vec2D position) =>
+        new(1 + (position.X - 1) / CubeSize,
+            1 + (position.Y - 1) / CubeSize);
+
+    protected (int Start, int End) Grid(int gridCoordinate) =>
+        (1 + (gridCoordinate - 1) * CubeSize, gridCoordinate * CubeSize);
 }
