@@ -1,3 +1,5 @@
+using System.Windows.Markup;
+
 namespace day24;
 
 public class Input : Day24
@@ -64,11 +66,12 @@ public abstract class Day24 : AOCDay
 
         StepToBlizzardLocations = Enumerable
             .Range(0, (Max.X + 1) * (Max.Y + 1))
-            .ToImmutableDictionary(
-                i => i,
-                i => WeatherForecast(InitialState, i)
+            .AsParallel()
+            .Select(i => KeyValuePair
+                .Create(i, WeatherForecast(InitialState, i)
                     .Select(x => x.Position)
-                    .ToImmutableHashSet());
+                    .ToImmutableHashSet()))
+            .ToImmutableDictionary();
     }
 
     private IEnumerable<Blizzard> WeatherForecast(IEnumerable<Blizzard> current, int step)
@@ -83,7 +86,7 @@ public abstract class Day24 : AOCDay
         }
     }
 
-    public record State(Vec2D Expedition, int Step);
+    public record struct State(Vec2D Expedition, int Step);
 
     public int AStar(State initialState, Vec2D target)
     {
@@ -99,7 +102,7 @@ public abstract class Day24 : AOCDay
             var current = toExplore[0]!;
             toExplore.RemoveAt(0);
 
-            if (current.Step + Vec2D.ManhattanDistance(current.Expedition, target) >= min)
+            if (min != int.MaxValue && current.Step + Vec2D.ManhattanDistance(current.Expedition, target) >= min)
             {
                 continue;
             }
@@ -111,15 +114,14 @@ public abstract class Day24 : AOCDay
             var nextStep = current.Step + 1;
             var blizzardForecast = StepToBlizzardLocations[nextStep % StepToBlizzardLocations.Count];
             var nextStates = directions
-                .Select(d => current.Expedition + d)
-                .Where(IsInBounds)
-                .Where(p => !blizzardForecast.Contains(p))
-                .Select(p => new State(p, nextStep))
-                .Where(visited.Add)
-                .ToList();
-            if (nextStates.Any())
+                .Select(d => new State(current.Expedition + d, nextStep))
+                .Where(p => IsInBounds(p.Expedition)
+                    && !blizzardForecast.Contains(p.Expedition)
+                    && visited.Add(p));
+            var countBefore = toExplore.Count;
+            toExplore.AddRange(nextStates);
+            if (toExplore.Count - countBefore > 0)
             {
-                toExplore.InsertRange(0, nextStates);
                 toExplore.Sort((x, y) => Math.Sign(Score(x) - Score(y)));
             }
         }
@@ -127,7 +129,6 @@ public abstract class Day24 : AOCDay
 
         bool IsInBounds(Vec2D position) => position == Start || position == Finish || (position.X >= Min.X && position.Y >= Min.Y && position.X <= Max.X && position.Y <= Max.Y);
         double Score(State state) => state.Step + Vec2D.ManhattanDistance(state.Expedition, target);
-        Vec2D Rotate180(Vec2D normal) => new(normal.X * -1, normal.Y * -1);
     }
 
     public override long Part1() => AStar(new State(Start, 0), Finish);
