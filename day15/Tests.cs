@@ -85,7 +85,7 @@ public abstract partial class Day15 : AOCDay
         }
         foreach (var (sensor, beacon) in input)
         {
-            var distance = ManhattanDistance(sensor, beacon);
+            var distance = Vec2D.ManhattanDistance(sensor, beacon);
             AddRowRange(sensor, distance, 0);
             for (var offset = 1; offset <= distance; offset++)
             {
@@ -116,6 +116,4 @@ public abstract partial class Day15 : AOCDay
         }
         return count;
     }
-
-    public static int ManhattanDistance(Vec2D a, Vec2D b) => Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
 }
